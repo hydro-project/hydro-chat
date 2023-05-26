@@ -109,7 +109,7 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Hydro Chat</title>
+        <title>HydroChat</title>
         <meta name="description" content="A demo application for Hydroflow" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -143,11 +143,31 @@ export default function Home() {
         </div>
 
         {!server ? (
-          <div style={{
+          <form style={{
             flexGrow: 1,
             display: "flex",
             justifyContent: "center",
             flexDirection: "column"
+          }} onSubmit={(e) => {
+            e.preventDefault();
+            setErrorMessage(null);
+
+            try {
+              const ws = new WebSocket(`ws://${typedServer}`);
+              ws.onopen = () => {
+                ws.send(JSON.stringify({
+                  "Name": typedName
+                }));
+                setServer(ws);
+              };
+
+              ws.onclose = (event) => {
+                setServer(null);
+                setErrorMessage(`Connection closed: ${wsMapping[event.code.toString()]}`);
+              };
+            } catch (e) {
+              setErrorMessage(e.toString());
+            }
           }}>
             <input type="text" style={{
               fontSize: "40px",
@@ -182,26 +202,7 @@ export default function Home() {
               borderRadius: "8px",
               cursor: "pointer",
               alignSelf: "center"
-            }} onClick={() => {
-              setErrorMessage(null);
-
-              try {
-                const ws = new WebSocket(`ws://${typedServer}`);
-                ws.onopen = () => {
-                  ws.send(JSON.stringify({
-                    "Name": typedName
-                  }));
-                  setServer(ws);
-                };
-
-                ws.onclose = (event) => {
-                  setServer(null);
-                  setErrorMessage(`Connection closed: ${wsMapping[event.code.toString()]}`);
-                };
-              } catch (e) {
-                setErrorMessage(e.toString());
-              }
-            }}>Connect</button>
+            }} type="submit">Connect</button>
 
             {errorMessage && (
               <div style={{
@@ -211,7 +212,7 @@ export default function Home() {
                 textAlign: "center"
               }}>{errorMessage}</div>
             )}
-          </div>
+          </form>
         ) : (
           <ConnectedUI name={typedName} ws={server} />
         )}
