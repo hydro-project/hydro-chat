@@ -1,7 +1,7 @@
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import logo from "./hydro-chat.svg"
 
 function ConnectedUI({ name, ws }) {
@@ -9,10 +9,18 @@ function ConnectedUI({ name, ws }) {
   const [messages, setMessages] = useState([]);
   const [typedMessage, setTypedMessage] = useState("");
 
+  const scrollRef = useRef(null);
+
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     setMessages(old => [...old, data[0]]);
   };
+
+  useLayoutEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   return (
     <>
@@ -20,7 +28,8 @@ function ConnectedUI({ name, ws }) {
         flexGrow: 1,
         display: "flex",
         flexDirection: "column",
-      }}>
+        overflowY: "scroll"
+      }} ref={scrollRef}>
         {messages.map((message, i) => (
           <div key={i} style={{
             border: "1px solid #aaa",
@@ -38,6 +47,7 @@ function ConnectedUI({ name, ws }) {
       </div>
 
       <div style={{
+        marginTop: "10px",
         marginBottom: "10px",
         paddingLeft: "10px",
         paddingRight: "10px",
@@ -58,7 +68,6 @@ function ConnectedUI({ name, ws }) {
           <input type="text" style={{
             fontSize: "24px",
             flexGrow: 1,
-            value: typedMessage,
             borderRadius: "10px",
             border: "1px solid #aaa",
             padding: "10px"
