@@ -13,7 +13,7 @@ function ConnectedUI({ name, ws }) {
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    setMessages(old => [...old, data[0]]);
+    setMessages(old => [...old, data]);
   };
 
   useLayoutEffect(() => {
@@ -118,6 +118,11 @@ export default function Home() {
   const [server, setServer] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  const [isHTTPS, setIsHTTPS] = useState(false);
+  useLayoutEffect(() => {
+    setIsHTTPS(location.protocol === "https:");
+  }, []);
+
   return (
     <div className={styles.container}>
       <Head>
@@ -154,7 +159,8 @@ export default function Home() {
           </a>
         </div>
 
-        {!server ? (
+        {!server ? (isHTTPS ?
+          <h1>You appear to be using https, please use the <a style={{ color: "blue" }}href="http://chat.hydro.run">HTTP version</a></h1> : (
           <form style={{
             flexGrow: 1,
             display: "flex",
@@ -228,7 +234,7 @@ export default function Home() {
               }}>{errorMessage}</div>
             )}
           </form>
-        ) : (
+        )) : (
           <ConnectedUI name={typedName} ws={server} />
         )}
       </main>
