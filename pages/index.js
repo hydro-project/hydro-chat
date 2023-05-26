@@ -42,9 +42,18 @@ function ConnectedUI({ name, ws }) {
         paddingLeft: "10px",
         paddingRight: "10px",
       }}>
-        <div style={{
+        <form style={{
           display: "flex",
           width: "100%"
+        }} onSubmit={(e) => {
+          e.preventDefault();
+          setTypedMessage("");
+          ws.send(JSON.stringify({
+            "Message": {
+              "id": nextID.current++,
+              "text": typedMessage
+            }
+          }));
         }}>
           <input type="text" style={{
             fontSize: "24px",
@@ -53,7 +62,7 @@ function ConnectedUI({ name, ws }) {
             borderRadius: "10px",
             border: "1px solid #aaa",
             padding: "10px"
-          }} onInput={(e) => {
+          }} value={typedMessage} onInput={(e) => {
             setTypedMessage(e.target.value)
           }}></input>
           <button style={{
@@ -65,16 +74,8 @@ function ConnectedUI({ name, ws }) {
             border: "none",
             borderRadius: "8px",
             cursor: "pointer"
-          }} onClick={() => {
-            setTypedMessage("");
-            ws.send(JSON.stringify({
-              "Message": {
-                "id": nextID.current++,
-                "text": typedMessage
-              }
-            }));
-          }}>Send</button>
-        </div>
+          }} type="submit">Send</button>
+        </form>
       </div>
     </>
   )
