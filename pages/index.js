@@ -28,7 +28,9 @@ function ConnectedUI({ name, ws }) {
         flexGrow: 1,
         display: "flex",
         flexDirection: "column",
-        overflowY: "scroll"
+        overflowY: "scroll",
+        paddingLeft: "10px",
+        paddingRight: "10px"
       }} ref={scrollRef}>
         {messages.map((message, i) => (
           <div key={i} style={{
@@ -70,7 +72,8 @@ function ConnectedUI({ name, ws }) {
             flexGrow: 1,
             borderRadius: "10px",
             border: "1px solid #aaa",
-            padding: "10px"
+            padding: "10px",
+            minWidth: "0px"
           }} value={typedMessage} onInput={(e) => {
             setTypedMessage(e.target.value)
           }}></input>
@@ -156,13 +159,16 @@ export default function Home() {
             flexGrow: 1,
             display: "flex",
             justifyContent: "center",
-            flexDirection: "column"
+            flexDirection: "column",
+            paddingLeft: "10px",
+            paddingRight: "10px"
           }} onSubmit={(e) => {
             e.preventDefault();
             setErrorMessage(null);
 
             try {
               const ws = new WebSocket(`ws://${typedServer}`);
+              setErrorMessage("Connecting...");
               ws.onopen = () => {
                 ws.send(JSON.stringify({
                   "Name": typedName
