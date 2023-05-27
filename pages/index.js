@@ -1,20 +1,52 @@
 import Head from 'next/head'
 import Image from 'next/image'
 import styles from '../styles/Home.module.css'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import logo from "./hydro-chat.svg"
 
-function ConnectedUI({ name, ws }) {
+function ConnectedUI({ name, url, onError, onClose }) {
   const nextID = useRef(0);
   const [messages, setMessages] = useState([]);
   const [typedMessage, setTypedMessage] = useState("");
 
-  const scrollRef = useRef(null);
+  const wsRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
+  useEffect(() => {
+    try {
+      const ws = new WebSocket(url);
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    setMessages(old => [...old, data]);
-  };
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setMessages(old => [...old, data]);
+      };
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          "Name": name
+        }));
+        setIsConnected(true);
+      };
+
+      ws.onclose = onClose;
+
+      wsRef.current = ws;
+
+      return () => {
+        ws.onmessage = () => {};
+        ws.onopen = () => {};
+        ws.onclose = () => {};
+        ws.close();
+
+        if (wsRef.current === ws) {
+          wsRef.current = null;
+        }
+      };
+    } catch (e) {
+      onError(e.toString());
+    }
+  }, [url]);
+
+  const scrollRef = useRef(null);
 
   useLayoutEffect(() => {
     if (scrollRef.current) {
@@ -23,7 +55,9 @@ function ConnectedUI({ name, ws }) {
   }, [messages]);
 
   return (
-    <>
+    !isConnected ? <div>
+      <h1>Connecting...</h1>
+    </div> : <>
       <div style={{
         flexGrow: 1,
         display: "flex",
@@ -60,12 +94,14 @@ function ConnectedUI({ name, ws }) {
         }} onSubmit={(e) => {
           e.preventDefault();
           setTypedMessage("");
-          ws.send(JSON.stringify({
-            "Message": {
-              "id": nextID.current++,
-              "text": typedMessage
-            }
-          }));
+          if (wsRef.current) {
+            wsRef.current.send(JSON.stringify({
+              "Message": {
+                "id": nextID.current++,
+                "text": typedMessage
+              }
+            }));
+          }
         }}>
           <input type="text" style={{
             fontSize: "24px",
@@ -136,11 +172,6 @@ export default function Home() {
           <a style={{
             cursor: "pointer"
           }} onClick={() => {
-            if (server) {
-              server.onclose = () => {};
-              server.close();
-            }
-
             setServer(null)
           }}>
             <Image
@@ -170,25 +201,7 @@ export default function Home() {
             paddingRight: "10px"
           }} onSubmit={(e) => {
             e.preventDefault();
-            setErrorMessage(null);
-
-            try {
-              const ws = new WebSocket(`ws://${typedServer}`);
-              setErrorMessage("Connecting...");
-              ws.onopen = () => {
-                ws.send(JSON.stringify({
-                  "Name": typedName
-                }));
-                setServer(ws);
-              };
-
-              ws.onclose = (event) => {
-                setServer(null);
-                setErrorMessage(`Connection closed: ${wsMapping[event.code.toString()]}`);
-              };
-            } catch (e) {
-              setErrorMessage(e.toString());
-            }
+            setServer(`ws://${typedServer}`);
           }}>
             <input type="text" style={{
               fontSize: "40px",
@@ -235,7 +248,13 @@ export default function Home() {
             )}
           </form>
         )) : (
-          <ConnectedUI name={typedName} ws={server} />
+          <ConnectedUI name={typedName} url={server} onError={(msg) => {
+            setServer(null);
+            setErrorMessage(msg);
+          }} onClose={(event) => {
+            setServer(null);
+            setErrorMessage(`Connection closed: ${wsMapping[event.code.toString()]}`);
+          }} />
         )}
       </main>
     </div>
